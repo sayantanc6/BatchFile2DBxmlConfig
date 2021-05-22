@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns = "http://www.springframework.org/schema/beans" 
+   xmlns:batch = "http://www.springframework.org/schema/batch" 
+   xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance" 
+   xsi:schemaLocation = "http://www.springframework.org/schema/batch 
+
+   http://www.springframework.org/schema/batch/spring-batch-2.2.xsd 
+   http://www.springframework.org/schema/beans
+   http://www.springframework.org/schema/beans/spring-beans-4.2.xsd">
+   
+   <batch:job id="CsvToXmlJob">
+   	 <batch:step id="step1">
+   	   <batch:tasklet>
+   	     <batch:chunk reader="itemreader" processor="itemProcessor"
+   	     writer="itemWriter" commit-interval="1" />
+   	   </batch:tasklet>
+   	 </batch:step>
+   	 <batch:listeners>
+          <batch:listener ref="listener" />
+     </batch:listeners>
+   </batch:job>
+   
+   
+   <bean id="itemreader" class="org.springframework.batch.item.file.FlatFileItemReader">
+   	 <property name="resource" value="${file.input}" /> 
+   	 	<property name="lineMapper">
+			<bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+		        <property name="lineTokenizer" ref="refTokenizer"/>
+		        <property name="fieldSetMapper" ref="reffieldSeTMapper"/>
+		    </bean>
+		 </property>
+   </bean>
+   
+   <bean id="refTokenizer" class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+	 <property name="names" value="brand,origin,characteristics" />
+  </bean>
+  
+   <bean id="reffieldSeTMapper" class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper">
+	 <property name="prototypeBeanName" value="item"></property>
+  </bean>
+  
+   <bean id="item" class="dummy.Coffee" scope="prototype"/> 
+   <bean id="itemProcessor" class="dummy.CoffeeItemProcessor"/> 
+   <bean id="listener" class="dummy.JobCompletionNotificationListener"/>
+   
+   <bean id="itemWriter" class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+        <property name="itemSqlParameterSourceProvider" ref="beansrcprovider"/> 
+    <property name="sql" value="INSERT INTO coffee (brand, origin, characteristics) VALUES (:brand, :origin, :characteristics)" />
+    <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    
+    <bean id="beansrcprovider" class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider"/>
+    
+    <bean name="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+	    <property name="driverClassName" value="${spring.datasource.driver-class-name}" />
+	    <property name="url" value="${spring.datasource.url}" />
+	    <property name="username" value="${spring.datasource.username}" />
+	    <property name="password" value="${spring.datasource.password}" />
+	</bean>
+   
+</beans>
